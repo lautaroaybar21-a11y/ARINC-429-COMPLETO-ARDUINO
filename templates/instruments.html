@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Instrumentos · ARINC Control{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">CONFIGURACIÓN</p><h1>Instrumentos</h1><p class="lede">Rangos de operación y parámetros de codificación ARINC 429.</p></div>
+  <a class="button primary" href="{{ url_for('create_instrument') }}"><span>+</span> Nuevo instrumento</a>
+</section>
+<section class="table-section" aria-labelledby="instrument-list-title">
+  <div class="section-heading"><h2 id="instrument-list-title">Instrumentos registrados</h2><span class="count">{{ instruments|length }} total</span></div>
+  {% if instruments %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Instrumento</th><th>Rango</th><th>Label / SDI / SSM</th><th>Codificación</th><th class="actions-heading">Acciones</th></tr></thead>
+    <tbody>{% for instrument in instruments %}
+      <tr>
+        <td><strong>{{ instrument.name }}</strong><small>{{ instrument.description or 'Sin descripción' }}</small></td>
+        <td>{{ instrument.value_min }} – {{ instrument.value_max }}</td>
+        <td><span class="mono">{{ instrument.label_octal }}</span> <small>SDI {{ instrument.sdi }} · SSM {{ instrument.ssm }}</small></td>
+        <td><span class="tag">{{ instrument.encoding }}</span><small>Resolución {{ instrument.resolution }}</small></td>
+        <td class="row-actions"><a class="text-action" href="{{ url_for('edit_instrument', instrument_id=instrument.id) }}">Editar</a>
+          <form method="post" action="{{ url_for('delete_instrument', instrument_id=instrument.id) }}" onsubmit="return confirm('¿Eliminar este instrumento? Los instrumentos con envíos asociados no se pueden eliminar.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-action danger" type="submit">Eliminar</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty-state"><span class="empty-symbol">01</span><div><h3>Todavía no hay instrumentos</h3><p>Creá un instrumento para poder registrar y transmitir envíos.</p></div><a class="button secondary" href="{{ url_for('create_instrument') }}">Crear instrumento</a></div>{% endif %}
+</section>
+<aside class="note-band"><span class="note-icon">i</span><p>La etiqueta se ingresa en octal. El orden de transmisión por byte se configura para el puerto serie, independientemente del orden de bits ARINC.</p></aside>
+{% endblock %}

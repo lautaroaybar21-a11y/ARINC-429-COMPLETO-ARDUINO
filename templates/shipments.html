@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Envíos · ARINC Control{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">TRANSMISIÓN</p><h1>Envíos</h1><p class="lede">Valores registrados, palabra ARINC generada y resultado de transmisión.</p></div>
+  <a class="button primary" href="{{ url_for('create_shipment') }}"><span>+</span> Crear envío</a>
+</section>
+<section class="table-section" aria-labelledby="shipment-list-title">
+  <div class="section-heading"><h2 id="shipment-list-title">Historial de envíos</h2><span class="count">{{ shipments|length }} total</span></div>
+  {% if shipments %}
+  <div class="table-wrap"><table class="shipment-table">
+    <thead><tr><th>Fecha</th><th>Instrumento / valor</th><th>Palabra ARINC 429</th><th>Puerto serie</th><th>Tensión calculada</th><th class="actions-heading">Acciones</th></tr></thead>
+    <tbody>{% for shipment in shipments %}
+      <tr>
+        <td class="date-cell">{{ shipment.created_at.strftime('%Y-%m-%d') }}<small>{{ shipment.created_at.strftime('%H:%M:%S UTC') }}</small></td>
+        <td><strong>{{ shipment.instrument.name }}</strong><small>{{ shipment.value }}</small></td>
+        <td><span class="mono word-hex">{{ shipment.word_hex }}</span><small class="mono bit-string">{{ shipment.word_binary }}</small></td>
+        <td><span class="status {{ 'ok' if shipment.transmitted_at else 'pending' }}">{{ 'Transmitido' if shipment.transmitted_at else 'Pendiente / error' }}</span><small>{{ shipment.serial_status }}</small></td>
+        <td>{% if shipment.calculated_voltage is not none %}<strong>{{ shipment.calculated_voltage }} V</strong>{% else %}<span class="muted">Sin cálculo</span>{% endif %}<small>{{ shipment.voltage_status }}</small><span class="physical-warning">Sin salida física</span></td>
+        <td class="row-actions"><a class="text-action" href="{{ url_for('edit_shipment', shipment_id=shipment.id) }}">Editar</a>
+          <form method="post" action="{{ url_for('transmit_shipment', shipment_id=shipment.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-action" type="submit">Transmitir</button></form>
+          <form method="post" action="{{ url_for('delete_shipment', shipment_id=shipment.id) }}" onsubmit="return confirm('¿Eliminar este envío?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-action danger" type="submit">Eliminar</button></form>
+        </td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty-state"><span class="empty-symbol">00</span><div><h3>No hay envíos registrados</h3><p>Seleccioná un instrumento para codificar y registrar el primer valor.</p></div><a class="button secondary" href="{{ url_for('create_shipment') }}">Crear envío</a></div>{% endif %}
+</section>
+<aside class="note-band"><span class="note-icon">i</span><p>La palabra se muestra como bits 32→1. Los 4 bytes serie se serializan según SERIAL_BYTE_ORDER. El cálculo de voltaje no implica que exista una salida analógica física.</p></aside>
+{% endblock %}

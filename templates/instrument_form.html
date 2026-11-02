@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if instrument else 'Nuevo' }} instrumento · ARINC Control{% endblock %}
+{% block content %}
+<section class="page-heading compact-heading">
+  <div><p class="eyebrow">CONFIGURACIÓN / INSTRUMENTOS</p><h1>{{ 'Editar instrumento' if instrument else 'Nuevo instrumento' }}</h1><p class="lede">Definí el rango permitido y la representación de datos para este label.</p></div>
+  <a class="button quiet" href="{{ url_for('instruments') }}">Volver a instrumentos</a>
+</section>
+<form class="form-panel" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="form-grid">
+    <label class="field span-2"><span>Nombre</span><input name="name" required maxlength="120" value="{{ instrument.name if instrument else request.form.get('name', '') }}" placeholder="Ej. Altímetro de cabina"></label>
+    <label class="field span-2"><span>Descripción <em>opcional</em></span><textarea name="description" rows="2" placeholder="Uso o referencia del instrumento">{{ instrument.description if instrument else request.form.get('description', '') }}</textarea></label>
+    <label class="field"><span>Valor mínimo</span><input type="number" name="value_min" step="any" required value="{{ instrument.value_min if instrument else request.form.get('value_min', '') }}"></label>
+    <label class="field"><span>Valor máximo</span><input type="number" name="value_max" step="any" required value="{{ instrument.value_max if instrument else request.form.get('value_max', '') }}"></label>
+    <label class="field"><span>Label octal</span><input name="label_octal" required maxlength="3" pattern="[0-7]{1,3}" value="{{ instrument.label_octal if instrument else request.form.get('label_octal', '') }}" placeholder="213"><small>De 000 a 377, en octal.</small></label>
+    <label class="field"><span>Codificación</span><select name="encoding" required><option value="BNR" {{ 'selected' if (instrument.encoding if instrument else request.form.get('encoding', 'BNR')) == 'BNR' }}>BNR</option><option value="BCD" {{ 'selected' if (instrument.encoding if instrument else request.form.get('encoding')) == 'BCD' }}>BCD</option></select></label>
+    <label class="field"><span>SDI</span><select name="sdi" required>{% for value in range(4) %}<option value="{{ value }}" {{ 'selected' if (instrument.sdi if instrument else request.form.get('sdi', '0')|int) == value }}>{{ value }}</option>{% endfor %}</select></label>
+    <label class="field"><span>SSM</span><select name="ssm" required>{% for value in range(4) %}<option value="{{ value }}" {{ 'selected' if (instrument.ssm if instrument else request.form.get('ssm', '0')|int) == value }}>{{ value }}</option>{% endfor %}</select></label>
+    <label class="field"><span>Resolución BNR</span><input type="number" name="resolution" step="any" min="0" required value="{{ instrument.resolution if instrument else request.form.get('resolution', '1') }}"><small>Unidades por incremento BNR; BCD se codifica como entero.</small></label>
+  </div>
+  <div class="form-actions"><a class="button quiet" href="{{ url_for('instruments') }}">Cancelar</a><button class="button primary" type="submit">{{ 'Guardar cambios' if instrument else 'Crear instrumento' }}</button></div>
+</form>
+{% endblock %}

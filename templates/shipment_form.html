@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if shipment else 'Crear' }} envío · ARINC Control{% endblock %}
+{% block content %}
+<section class="page-heading compact-heading">
+  <div><p class="eyebrow">TRANSMISIÓN / ENVÍOS</p><h1>{{ 'Editar envío' if shipment else 'Crear envío' }}</h1><p class="lede">Elegí el instrumento y cargá un valor dentro del rango habilitado.</p></div>
+  <a class="button quiet" href="{{ url_for('shipments') }}">Volver a envíos</a>
+</section>
+{% if instruments %}
+<form class="form-panel shipment-form" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="form-grid">
+    <label class="field span-2"><span>Instrumento</span><select id="instrument-select" name="instrument_id" required><option value="">Seleccionar instrumento…</option>{% for item in instruments %}<option value="{{ item.id }}" data-min="{{ item.value_min }}" data-max="{{ item.value_max }}" data-encoding="{{ item.encoding }}" {{ 'selected' if (shipment.instrument_id if shipment else request.form.get('instrument_id', '')|int) == item.id }}>{{ item.name }} · {{ item.encoding }} · {{ item.value_min }} a {{ item.value_max }}</option>{% endfor %}</select></label>
+    <label class="field span-2"><span>Valor a enviar</span><input id="value-input" type="number" name="value" step="any" required value="{{ shipment.value if shipment else request.form.get('value', '') }}" placeholder="Ingresá el valor del instrumento"><small id="range-hint">El rango se carga al seleccionar un instrumento.</small></label>
+  </div>
+  <div class="protocol-preview"><div class="preview-title"><span class="signal-mark"></span><span>Al confirmar se guardará el envío, se generará la palabra de 32 bits y se intentará transmitir por serie.</span></div><p>La tensión se calcula solo cuando están configurados sus límites. Para generar una señal continua se requiere un DAC o hardware de salida apropiado.</p></div>
+  <div class="form-actions"><a class="button quiet" href="{{ url_for('shipments') }}">Cancelar</a><button class="button primary" type="submit">{{ 'Guardar cambios' if shipment else 'Crear y transmitir' }}</button></div>
+</form>
+<script>
+  const instrumentSelect = document.getElementById('instrument-select');
+  const valueInput = document.getElementById('value-input');
+  const rangeHint = document.getElementById('range-hint');
+  function updateInstrumentRange() {
+    const option = instrumentSelect.selectedOptions[0];
+    if (!option || !option.dataset.min) {
+      valueInput.removeAttribute('min');
+      valueInput.removeAttribute('max');
+      rangeHint.textContent = 'El rango se carga al seleccionar un instrumento.';
+      return;
+    }
+    valueInput.min = option.dataset.min;
+    valueInput.max = option.dataset.max;
+    rangeHint.textContent = `Rango: ${option.dataset.min} a ${option.dataset.max} · ${option.dataset.encoding}`;
+  }
+  instrumentSelect.addEventListener('change', updateInstrumentRange);
+  updateInstrumentRange();
+</script>
+{% else %}
+<div class="empty-state"><span class="empty-symbol">!</span><div><h3>Primero necesitás un instrumento</h3><p>Los envíos usan los rangos y parámetros ARINC definidos en un instrumento registrado.</p></div><a class="button secondary" href="{{ url_for('create_instrument') }}">Crear instrumento</a></div>
+{% endif %}
+{% endblock %}

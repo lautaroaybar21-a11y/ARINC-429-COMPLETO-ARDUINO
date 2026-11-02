@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Hardware · ARINC Control{% endblock %}
+{% block content %}
+<section class="page-heading compact-heading">
+  <div><p class="eyebrow">CONFIGURACIÓN / SALIDAS</p><h1>Hardware</h1><p class="lede">Ajustes de comunicación y escala analógica para la interfaz conectada.</p></div>
+</section>
+<form class="form-panel hardware-panel" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="section-heading form-section-heading"><h2>Puerto serie</h2><span class="status {{ 'ok' if settings.SERIAL_PORT and settings.SERIAL_BYTE_ORDER else 'pending' }}">{{ 'Configurado' if settings.SERIAL_PORT and settings.SERIAL_BYTE_ORDER else 'Pendiente' }}</span></div>
+  <div class="form-grid hardware-grid">
+    <label class="field"><span>Puerto</span><input name="serial_port" list="serial-ports" value="{{ settings.SERIAL_PORT }}" placeholder="Ej. COM3"><datalist id="serial-ports">{% for port in ports %}<option value="{{ port.device }}">{{ port.description }}</option>{% endfor %}</datalist><small>{% if ports %}Detectados: {% for port in ports %}{{ port.device }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}No se detectan puertos ahora; podés escribir el nombre manualmente.{% endif %}</small></label>
+    <label class="field"><span>Velocidad (baudios)</span><input type="number" name="serial_baudrate" min="1200" max="2000000" step="1" required value="{{ settings.SERIAL_BAUDRATE }}"></label>
+    <label class="field"><span>Orden de bytes del adaptador</span><select name="serial_byte_order"><option value="" {{ 'selected' if not settings.SERIAL_BYTE_ORDER }}>Seleccionar…</option><option value="little" {{ 'selected' if settings.SERIAL_BYTE_ORDER == 'little' }}>Little-endian</option><option value="big" {{ 'selected' if settings.SERIAL_BYTE_ORDER == 'big' }}>Big-endian</option></select><small>Debe coincidir con el firmware del adaptador; no cambia el orden de bits ARINC.</small></label>
+  </div>
+  <div class="section-heading form-section-heading voltage-heading"><h2>Escala de tensión</h2><span class="tag">Solo cálculo</span></div>
+  <div class="form-grid hardware-grid">
+    <label class="field"><span>Tensión mínima (V)</span><input type="number" name="voltage_min" step="any" value="{{ settings.OUTPUT_VOLTAGE_MIN if settings.OUTPUT_VOLTAGE_MIN is not none else '' }}" placeholder="Sin configurar"></label>
+    <label class="field"><span>Tensión máxima (V)</span><input type="number" name="voltage_max" step="any" value="{{ settings.OUTPUT_VOLTAGE_MAX if settings.OUTPUT_VOLTAGE_MAX is not none else '' }}" placeholder="Sin configurar"></label>
+  </div>
+  <aside class="note-band hardware-note"><span class="note-icon">i</span><p>Guardar estos valores no prueba el puerto ni crea una salida física. La UART requiere un puente que transforme los bytes en señal ARINC 429; la tensión real requiere DAC y etapa de salida adecuados. No conectes un servo al auricular.</p></aside>
+  <div class="form-actions"><button class="button primary" type="submit">Guardar configuración</button></div>
+</form>
+{% endblock %}

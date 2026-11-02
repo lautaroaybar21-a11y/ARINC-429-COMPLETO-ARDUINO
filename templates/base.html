@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ARINC / Control{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('shipments') }}" aria-label="ARINC Control, inicio">
+      <span class="brand-mark">A<span>429</span></span>
+      <span class="brand-name">ARINC <b>CONTROL</b></span>
+    </a>
+    <nav aria-label="Navegación principal">
+      <a class="nav-link {{ 'active' if request.endpoint in ['shipments', 'create_shipment', 'edit_shipment'] else '' }}" href="{{ url_for('shipments') }}">Envíos</a>
+      <a class="nav-link {{ 'active' if request.endpoint in ['instruments', 'create_instrument', 'edit_instrument'] else '' }}" href="{{ url_for('instruments') }}">Instrumentos</a>
+      <a class="nav-link {{ 'active' if request.endpoint == 'hardware_settings' else '' }}" href="{{ url_for('hardware_settings') }}">Hardware</a>
+    </nav>
+    <div class="system-state"><i></i> PANEL LOCAL</div>
+  </header>
+  <main class="page-shell">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alerts" aria-live="polite">
+          {% for category, message in messages %}<div class="alert {{ category }}">{{ message }}</div>{% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer"><span>ARINC 429 · Gestión local</span><span>La salida física depende del hardware conectado</span></footer>
+</body>
+</html>
