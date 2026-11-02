@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import select
@@ -292,6 +292,8 @@ def create_app(test_config=None):
                 db.session.add(instrument)
                 db.session.commit()
                 flash("Instrumento creado.", "success")
+                if request.args.get("source") == "shipment":
+                    return redirect(url_for("create_shipment", instrument_id=instrument.id))
                 return redirect(url_for("instruments"))
             except ValueError as error:
                 db.session.rollback()
@@ -367,7 +369,35 @@ def create_app(test_config=None):
             except Exception:
                 db.session.rollback()
                 flash("No se pudo guardar el envío. Verificá la conexión con la base de datos.", "error")
-        return render_template("shipment_form.html", shipment=None, instruments=instruments)
+        selected_instrument_id = (
+            request.form.get("instrument_id", type=int)
+            if request.method == "POST"
+            else request.args.get("instrument_id", type=int)
+        )
+        return render_template(
+            "shipment_form.html",
+            shipment=None,
+            instruments=instruments,
+            selected_instrument_id=selected_instrument_id,
+        )
+
+    @app.post("/api/arinc-preview")
+    def arinc_preview():
+        try:
+            payload = request.get_json(silent=True) or {}
+            instrument, value, word, voltage, voltage_status = _shipment_values(payload, app)
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        return jsonify(
+            {
+                "word_hex": f"0x{word:08X}",
+                "word_binary": word_bits(word),
+                "encoding": instrument.encoding,
+                "value": str(value),
+                "voltage": str(voltage) if voltage is not None else None,
+                "voltage_status": voltage_status,
+            }
+        )
 
     @app.route("/shipments/<int:shipment_id>/edit", methods=["GET", "POST"])
     def edit_shipment(shipment_id):
@@ -392,7 +422,12 @@ def create_app(test_config=None):
             except Exception:
                 db.session.rollback()
                 flash("No se pudo actualizar el envío.", "error")
-        return render_template("shipment_form.html", shipment=shipment, instruments=instruments)
+        return render_template(
+            "shipment_form.html",
+            shipment=shipment,
+            instruments=instruments,
+            selected_instrument_id=shipment.instrument_id,
+        )
 
     @app.post("/shipments/<int:shipment_id>/delete")
     def delete_shipment(shipment_id):

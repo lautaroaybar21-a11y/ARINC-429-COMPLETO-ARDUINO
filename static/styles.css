@@ -100,6 +100,23 @@ td small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px
 .preview-title { display: flex; align-items: flex-start; gap: 10px; color: #315348; font-size: 11px; font-weight: 700; line-height: 1.6; }
 .signal-mark { width: 8px; height: 8px; flex: 0 0 8px; margin-top: 4px; background: var(--green); }
 .protocol-preview p { margin: 8px 0 0 18px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.entry-step { padding: 2px 0 22px; }
+.instrument-availability { display: flex; justify-content: space-between; gap: 12px; margin: -4px 0 14px; color: var(--muted); font-size: 10px; }
+.entry-step-heading { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
+.entry-step-heading > span { color: var(--green); font: 12px var(--mono); }
+.entry-step-heading h2 { margin: 0; font-size: 14px; }
+.entry-step-heading p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+.value-step { padding-top: 20px; border-top: 1px solid var(--line); }
+.word-preview { margin-top: 4px; padding: 16px; background: #eff5f1; border-left: 3px solid var(--green); }
+.word-preview .preview-title { align-items: center; }
+.word-preview .preview-title h2 { margin: 0; font-size: 12px; }
+.word-preview > p, #preview-status { margin: 10px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+#word-result { display: grid; gap: 7px; margin: 12px 0; }
+#word-result[hidden] { display: none; }
+.word-preview-hex { font-size: 18px; font-weight: 500; }
+.word-preview-bits { overflow-wrap: anywhere; font-size: 12px; line-height: 1.8; }
+#word-encoding { color: var(--green-dark); font-size: 10px; }
+.word-preview .preview-footnote { margin-bottom: 0; font-size: 10px; }
 .alerts { display: grid; gap: 8px; margin-bottom: 18px; }
 .alert { padding: 12px 14px; border-left: 3px solid var(--green); background: #e4f2e8; font-size: 12px; }
 .alert.error { border-color: var(--coral); background: #faeae5; color: #753b2f; }
@@ -116,6 +133,7 @@ td small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px
   h1 { font-size: 29px; }
   .form-panel { padding: 18px; }
   .form-grid { grid-template-columns: 1fr; gap: 16px; }
+  .instrument-availability { align-items: flex-start; flex-direction: column; }
   .span-2 { grid-column: auto; }
   .empty-state { align-items: flex-start; flex-wrap: wrap; gap: 12px; padding: 22px 18px; }
   .empty-state > div { flex: 1 1 calc(100% - 54px); }

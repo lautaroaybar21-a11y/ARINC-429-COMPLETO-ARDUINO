@@ -8,7 +8,7 @@
 <form class="form-panel" method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="form-grid">
-    <label class="field span-2"><span>Nombre</span><input name="name" required maxlength="120" value="{{ instrument.name if instrument else request.form.get('name', '') }}" placeholder="Ej. Altímetro de cabina"></label>
+    <label class="field span-2"><span>Nombre</span><input name="name" required maxlength="120" value="{{ instrument.name if instrument else request.form.get('name', '') }}" placeholder="Escribí el nombre del instrumento"></label>
     <label class="field span-2"><span>Descripción <em>opcional</em></span><textarea name="description" rows="2" placeholder="Uso o referencia del instrumento">{{ instrument.description if instrument else request.form.get('description', '') }}</textarea></label>
     <label class="field"><span>Valor mínimo</span><input type="number" name="value_min" step="any" required value="{{ instrument.value_min if instrument else request.form.get('value_min', '') }}"></label>
     <label class="field"><span>Valor máximo</span><input type="number" name="value_max" step="any" required value="{{ instrument.value_max if instrument else request.form.get('value_max', '') }}"></label>

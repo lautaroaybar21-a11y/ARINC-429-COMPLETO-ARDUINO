@@ -33,7 +33,7 @@ En la primera ejecución, usar el inicializador MySQL. Crea una instancia privad
 python setup_mysql.py
 ```
 
-Para usar una instalación MySQL existente, copiar `.env.example` a `.env`, completar `DATABASE_URL` y `SECRET_KEY`, y ejecutar `python app.py`. Abrir http://127.0.0.1:5000. Registrar primero un instrumento en **Instrumentos** y después usar **Crear envío**. Un envío nuevo valida el rango, genera y guarda la palabra, intenta transmitirla si el puerto está configurado, y deja el resultado visible en la tabla. Editar un envío no lo retransmite; usar **Transmitir** para reenviar explícitamente.
+Para usar una instalación MySQL existente, copiar `.env.example` a `.env`, completar `DATABASE_URL` y `SECRET_KEY`, y ejecutar `python app.py`. Abrir http://127.0.0.1:5000. En **Instrumentos**, escribí libremente el nombre que quieras y completá el rango y los parámetros ARINC del instrumento real. En **Crear envío**, el selector muestra solo instrumentos guardados en MySQL; al agregar uno desde ahí, el formulario vuelve con el instrumento nuevo seleccionado. Completar el valor muestra la palabra calculada antes de guardar. El envío valida el rango, guarda la palabra e intenta transmitirla si el puerto está configurado. Editar un envío no lo retransmite; usar **Transmitir** para reenviar explícitamente.
 
 ## Codificación y transporte
 

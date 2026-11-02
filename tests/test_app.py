@@ -225,6 +225,76 @@ class AppCrudTests(unittest.TestCase):
         self.assertIn("orden de bytes".encode(), response.data)
         self.assertEqual(self.app.config["SERIAL_PORT"], "")
 
+    def test_instrument_name_is_free_text(self):
+        response = self.client.get("/instruments/new")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('name="name"'.encode(), response.data)
+        self.assertNotIn("Plantillas de instrumentos".encode(), response.data)
+        self.assertNotIn("Altímetro".encode(), response.data)
+
+        response = self.client.post(
+            "/instruments/new",
+            data={
+                "name": "Mi instrumento personalizado 777",
+                "description": "Nombre libre",
+                "value_min": "0",
+                "value_max": "100",
+                "label_octal": "213",
+                "sdi": "0",
+                "ssm": "0",
+                "encoding": "BNR",
+                "resolution": "1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(db.session.query(Instrument).one().name, "Mi instrumento personalizado 777")
+
+    def test_custom_instrument_created_from_shipment_returns_selected(self):
+        response = self.client.post(
+            "/instruments/new?source=shipment",
+            data={
+                "name": "A elección del usuario",
+                "value_min": "-10",
+                "value_max": "10",
+                "label_octal": "123",
+                "sdi": "0",
+                "ssm": "0",
+                "encoding": "BNR",
+                "resolution": "0.1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/shipments/new?instrument_id=1", response.location)
+        page = self.client.get(response.location)
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('value="1" data-min="-10.0000"'.encode(), page.data)
+
+    def test_arinc_preview_requires_complete_valid_instrument_and_value(self):
+        instrument = self.create_instrument()
+        response = self.client.post(
+            "/api/arinc-preview",
+            json={"instrument_id": instrument.id, "value": "50"},
+        )
+        self.assertEqual(response.status_code, 200)
+        preview = response.get_json()
+        self.assertEqual(preview["word_hex"], "0x0007D1D1")
+        self.assertEqual(len(preview["word_binary"]), 32)
+        self.assertEqual(db.session.query(Shipment).count(), 0)
+
+        response = self.client.post(
+            "/api/arinc-preview",
+            json={"instrument_id": instrument.id, "value": "101"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("valor debe estar".encode(), response.data)
+
+    def test_shipment_form_explains_registered_instrument_list(self):
+        self.create_instrument()
+        response = self.client.get("/shipments/new")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("1 instrumento disponible en MySQL".encode(), response.data)
+        self.assertIn("Agregar instrumento".encode(), response.data)
+
 
 if __name__ == "__main__":
     unittest.main()

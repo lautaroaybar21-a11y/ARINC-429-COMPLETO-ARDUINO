@@ -8,31 +8,91 @@
 {% if instruments %}
 <form class="form-panel shipment-form" method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="form-grid">
-    <label class="field span-2"><span>Instrumento</span><select id="instrument-select" name="instrument_id" required><option value="">Seleccionar instrumento…</option>{% for item in instruments %}<option value="{{ item.id }}" data-min="{{ item.value_min }}" data-max="{{ item.value_max }}" data-encoding="{{ item.encoding }}" {{ 'selected' if (shipment.instrument_id if shipment else request.form.get('instrument_id', '')|int) == item.id }}>{{ item.name }} · {{ item.encoding }} · {{ item.value_min }} a {{ item.value_max }}</option>{% endfor %}</select></label>
-    <label class="field span-2"><span>Valor a enviar</span><input id="value-input" type="number" name="value" step="any" required value="{{ shipment.value if shipment else request.form.get('value', '') }}" placeholder="Ingresá el valor del instrumento"><small id="range-hint">El rango se carga al seleccionar un instrumento.</small></label>
+  <div class="entry-step">
+    <div class="entry-step-heading"><span>01</span><div><h2>Instrumento</h2><p>Elegí uno registrado; su rango y codificación se aplican al envío.</p></div></div>
+    <div class="instrument-availability"><span>{{ instruments|length }} instrumento{{ '' if instruments|length == 1 else 's' }} disponible{{ '' if instruments|length == 1 else 's' }} en MySQL</span><a class="text-action" href="{{ url_for('create_instrument', source='shipment') }}">Agregar instrumento</a></div>
+    <label class="field"><span>Instrumento seleccionado</span><select id="instrument-select" name="instrument_id" required><option value="">Seleccionar instrumento…</option>{% for item in instruments %}<option value="{{ item.id }}" data-min="{{ item.value_min }}" data-max="{{ item.value_max }}" data-encoding="{{ item.encoding }}" {{ 'selected' if selected_instrument_id == item.id }}>{{ item.name }} · {{ item.encoding }} · {{ item.value_min }} a {{ item.value_max }}</option>{% endfor %}</select></label>
   </div>
-  <div class="protocol-preview"><div class="preview-title"><span class="signal-mark"></span><span>Al confirmar se guardará el envío, se generará la palabra de 32 bits y se intentará transmitir por serie.</span></div><p>La tensión se calcula solo cuando están configurados sus límites. Para generar una señal continua se requiere un DAC o hardware de salida apropiado.</p></div>
+  <div class="entry-step value-step">
+    <div class="entry-step-heading"><span>02</span><div><h2>Valor</h2><p>Ingresá un valor dentro del rango del instrumento.</p></div></div>
+    <label class="field"><span>Valor a enviar</span><input id="value-input" type="number" name="value" step="any" required value="{{ shipment.value if shipment else request.form.get('value', '') }}" placeholder="Ingresá el valor"><small id="range-hint">Primero seleccioná un instrumento.</small></label>
+  </div>
+  <section class="word-preview" aria-live="polite" aria-labelledby="word-preview-title">
+    <div class="preview-title"><span class="signal-mark"></span><h2 id="word-preview-title">Vista previa ARINC 429</h2></div>
+    <p id="preview-status">Completá instrumento y valor para calcular la palabra.</p>
+    <div id="word-result" hidden>
+      <strong id="word-hex" class="mono word-preview-hex"></strong>
+      <span id="word-bits" class="mono word-preview-bits"></span>
+      <small id="word-encoding"></small>
+    </div>
+    <p class="preview-footnote">La palabra se calcula al completar los campos. Al guardar, se registra el envío y se intenta transmitir por serie si el hardware está configurado.</p>
+  </section>
   <div class="form-actions"><a class="button quiet" href="{{ url_for('shipments') }}">Cancelar</a><button class="button primary" type="submit">{{ 'Guardar cambios' if shipment else 'Crear y transmitir' }}</button></div>
 </form>
 <script>
   const instrumentSelect = document.getElementById('instrument-select');
   const valueInput = document.getElementById('value-input');
   const rangeHint = document.getElementById('range-hint');
-  function updateInstrumentRange() {
+  const previewStatus = document.getElementById('preview-status');
+  const wordResult = document.getElementById('word-result');
+  let previewRequest = 0;
+
+  async function updatePreview() {
+    const requestId = ++previewRequest;
     const option = instrumentSelect.selectedOptions[0];
     if (!option || !option.dataset.min) {
       valueInput.removeAttribute('min');
       valueInput.removeAttribute('max');
-      rangeHint.textContent = 'El rango se carga al seleccionar un instrumento.';
+      rangeHint.textContent = 'Primero seleccioná un instrumento.';
+      wordResult.hidden = true;
+      previewStatus.textContent = 'Completá instrumento y valor para calcular la palabra.';
       return;
     }
     valueInput.min = option.dataset.min;
     valueInput.max = option.dataset.max;
     rangeHint.textContent = `Rango: ${option.dataset.min} a ${option.dataset.max} · ${option.dataset.encoding}`;
+
+    if (valueInput.value === '') {
+      wordResult.hidden = true;
+      previewStatus.textContent = 'Ingresá el valor para calcular la palabra.';
+      return;
+    }
+    if (!valueInput.checkValidity()) {
+      wordResult.hidden = true;
+      previewStatus.textContent = `El valor debe estar entre ${option.dataset.min} y ${option.dataset.max}.`;
+      return;
+    }
+
+    previewStatus.textContent = 'Calculando palabra…';
+    wordResult.hidden = true;
+    try {
+      const response = await fetch('{{ url_for("arinc_preview") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name="csrf_token"]').value
+        },
+        body: JSON.stringify({instrument_id: instrumentSelect.value, value: valueInput.value})
+      });
+      const data = await response.json();
+      if (requestId !== previewRequest) return;
+      if (!response.ok) throw new Error(data.error || 'No se pudo calcular la palabra.');
+      document.getElementById('word-hex').textContent = data.word_hex;
+      document.getElementById('word-bits').textContent = data.word_binary.match(/.{1,4}/g).join(' ');
+      document.getElementById('word-encoding').textContent = `${data.encoding} · paridad impar · 32 bits`;
+      wordResult.hidden = false;
+      previewStatus.textContent = 'Palabra calculada para este instrumento y valor.';
+    } catch (error) {
+      if (requestId !== previewRequest) return;
+      previewStatus.textContent = error.message;
+    }
   }
-  instrumentSelect.addEventListener('change', updateInstrumentRange);
-  updateInstrumentRange();
+
+  instrumentSelect.addEventListener('change', () => {
+    updatePreview();
+  });
+  valueInput.addEventListener('input', updatePreview);
+  updatePreview();
 </script>
 {% else %}
 <div class="empty-state"><span class="empty-symbol">!</span><div><h3>Primero necesitás un instrumento</h3><p>Los envíos usan los rangos y parámetros ARINC definidos en un instrumento registrado.</p></div><a class="button secondary" href="{{ url_for('create_instrument') }}">Crear instrumento</a></div>
